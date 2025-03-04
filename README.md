@@ -1,6 +1,7 @@
 # Real Estate Database
 
 This repository contains the code for a database application for managing real estate listings.
+![image](https://github.com/user-attachments/assets/98160ceb-b582-4815-8fed-6efdc5fce95b)
 
 ## Contents
 
