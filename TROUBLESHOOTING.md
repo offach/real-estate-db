@@ -60,6 +60,20 @@ Docker автоматически настроит всё необходимое
 
 ## Проблема: База данных не подключается
 
+### Ошибка: "role 'postgres' does not exist"
+
+**Причина:** В Homebrew PostgreSQL используется ваше системное имя пользователя, а не `postgres`.
+
+**Решение:**
+```bash
+# Автоматическое исправление (рекомендуется)
+./start-db.sh
+# Скрипт автоматически обновит .env файл
+
+# Или вручную обновите .env:
+# Замените postgresql://postgres:password@ на postgresql://ваше_имя@
+```
+
 ### Проверьте:
 
 1. **PostgreSQL запущен:**
@@ -75,17 +89,31 @@ Docker автоматически настроит всё необходимое
 
 2. **Правильные настройки в .env:**
    ```env
-   DATABASE_URL=postgresql://user:password@localhost/real_estate_agency
+   # Для Homebrew PostgreSQL (macOS)
+   DATABASE_URL=postgresql://ваше_имя@localhost/real_estate_agency
+   
+   # Для стандартной установки
+   DATABASE_URL=postgresql://postgres:password@localhost/real_estate_agency
    ```
 
 3. **База данных существует:**
    ```bash
+   # Автоматически
+   ./setup-db.sh
+   
+   # Или вручную
    createdb real_estate_agency
    ```
 
 4. **Восстановлен дамп:**
    ```bash
+   # Автоматически (попробует восстановить из real_estate_agency.sql или init-db.sql)
+   ./setup-db.sh
+   
+   # Или вручную
    pg_restore -d real_estate_agency real_estate_agency.sql
+   # Или используйте init-db.sql как fallback
+   psql -d real_estate_agency -f init-db.sql
    ```
 
 ## Проблема: Модуль не найден
