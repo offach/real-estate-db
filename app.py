@@ -113,8 +113,29 @@ def internal_error(error):
     return render_template('error.html', error="Internal server error"), 500
 
 if __name__ == '__main__':
+    import os
+    import socket
+    
+    # Try to find an available port starting from 5000
+    def find_free_port(start_port=5000):
+        for port in range(start_port, start_port + 10):
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.bind(('', port))
+                    return port
+            except OSError:
+                continue
+        return start_port  # Fallback to original port
+    
+    port = int(os.getenv('FLASK_PORT', find_free_port(5000)))
+    
+    if port != 5000:
+        logger.info(f"Port 5000 is busy, using port {port} instead")
+        print(f"\n⚠️  Port 5000 is busy, using port {port} instead")
+        print(f"📍 Open http://localhost:{port} in your browser\n")
+    
     app.run(
         host='0.0.0.0',
-        port=5000,
+        port=port,
         debug=app.config['FLASK_DEBUG']
     )

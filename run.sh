@@ -89,6 +89,11 @@ try:
         conn = psycopg2.connect(Config.DATABASE_URL)
         print('✅ Database connection successful!')
         conn.close()
+    except psycopg2.OperationalError as e:
+        print(f'⚠️  Database connection failed: {e}')
+        print('💡 PostgreSQL might not be running')
+        print('💡 Start it with: ./start-db.sh')
+        print('💡 Or use Docker: docker-compose up db')
     except Exception as e:
         print(f'⚠️  Database connection failed: {e}')
         print('💡 Make sure PostgreSQL is running and DATABASE_URL is correct in .env')
@@ -98,7 +103,16 @@ except ImportError:
 
 # Start the application
 echo "🚀 Starting Flask application..."
-echo "📍 Open http://localhost:5000 in your browser"
+
+# Check if port 5000 is available
+if lsof -Pi :5000 -sTCP:LISTEN -t >/dev/null 2>&1 ; then
+    echo "⚠️  Port 5000 is busy (likely AirPlay Receiver on macOS)"
+    echo "💡 The app will automatically use the next available port"
+    echo "💡 To disable AirPlay Receiver: System Preferences -> General -> AirDrop & Handoff"
+    echo ""
+fi
+
+echo "📍 The app will be available at http://localhost:5000 (or next available port)"
 echo ""
 python3 app.py
 
