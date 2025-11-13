@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Estate Agency - Property Listings</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="header">
+        <h1>🏠 Real Estate Agency</h1>
+        <p class="subtitle">Find your perfect property</p>
+    </div>
+
+    <div class="container">
+        <div class="filters-panel">
+            <form method="GET" class="search-form">
+                <div class="form-group">
+                    <label for="search">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        Search Address
+                    </label>
+                    <input type="text" 
+                           id="search" 
+                           name="search" 
+                           value="{{ search }}" 
+                           placeholder="Enter address...">
+                </div>
+
+                <div class="form-group">
+                    <label for="type">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                        Property Type
+                    </label>
+                    <select id="type" name="type">
+                        <option value="">All Types</option>
+                        <option value="Apartment" {% if type == 'Apartment' %}selected{% endif %}>Apartment</option>
+                        <option value="House" {% if type == 'House' %}selected{% endif %}>House</option>
+                        <option value="Land" {% if type == 'Land' %}selected{% endif %}>Land</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    Search
+                </button>
+                <a href="/" class="btn-secondary">Clear</a>
+            </form>
+        </div>
+
+        <div class="main-content">
+            <div class="properties-section">
+                <div class="section-header">
+                    <h2>Properties ({{ properties|length }})</h2>
+                    <div class="map-controls">
+                        <button onclick="showAllMarkers()" class="btn-small">Show All on Map</button>
+                        <button onclick="clearAllMarkers()" class="btn-small">Clear Map</button>
+                    </div>
+                </div>
+
+                {% if properties %}
+                <div class="properties-grid">
+                    {% for property in properties %}
+                    <div class="property-card">
+                        <div class="property-header">
+                            <span class="property-type">{{ property.type }}</span>
+                            <span class="property-price">${{ "{:,.0f}".format(property.price) }}</span>
+                        </div>
+                        <div class="property-body">
+                            <p class="property-address">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                    <circle cx="12" cy="10" r="3"></circle>
+                                </svg>
+                                {{ property.address }}
+                            </p>
+                            {% if property.bedrooms %}
+                            <p class="property-bedrooms">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                                </svg>
+                                {{ property.bedrooms }} Bedroom{{ 's' if property.bedrooms != 1 else '' }}
+                            </p>
+                            {% endif %}
+                        </div>
+                        <div class="property-footer">
+                            {% if property.latitude and property.longitude %}
+                            <button onclick="toggleMarker({{ property.property_id }}, {{ property.latitude }}, {{ property.longitude }}, '{{ property.address|e }}', this)" 
+                                    class="btn-map" 
+                                    id="map-btn-{{ property.property_id }}">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                    <circle cx="12" cy="10" r="3"></circle>
+                                </svg>
+                                Show on Map
+                            </button>
+                            {% else %}
+                            <span class="no-location">Location not available</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-results">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <h3>No properties found</h3>
+                    <p>Try adjusting your search criteria</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="map-section">
+                <div class="map-header">
+                    <h2>Interactive Map</h2>
+                </div>
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([40.730610, -73.935242], 2);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        const markers = {};
+        const markerStates = {};
+
+        // Initialize markers from properties
+        {% for property in properties %}
+            {% if property.latitude and property.longitude %}
+            const marker{{ property.property_id }} = L.marker([{{ property.latitude }}, {{ property.longitude }}])
+                .bindPopup(`
+                    <div class="popup-content">
+                        <strong>{{ property.type }}</strong><br>
+                        {{ property.address|e }}<br>
+                        <strong>${{ "{:,.0f}".format(property.price) }}</strong>
+                        {% if property.bedrooms %}<br>{{ property.bedrooms }} Bedroom{{ 's' if property.bedrooms != 1 else '' }}{% endif %}
+                    </div>
+                `);
+            markers[{{ property.property_id }}] = marker{{ property.property_id }};
+            markerStates[{{ property.property_id }}] = false;
+            {% endif %}
+        {% endfor %}
+
+        function toggleMarker(propertyId, latitude, longitude, address, button) {
+            const marker = markers[propertyId];
+            if (!marker) return;
+
+            if (markerStates[propertyId]) {
+                map.removeLayer(marker);
+                markerStates[propertyId] = false;
+                button.classList.remove('active');
+                button.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    Show on Map
+                `;
+            } else {
+                map.addLayer(marker);
+                marker.openPopup();
+                map.setView([latitude, longitude], 13);
+                markerStates[propertyId] = true;
+                button.classList.add('active');
+                button.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    Hide from Map
+                `;
+            }
+        }
+
+        function showAllMarkers() {
+            for (const [id, marker] of Object.entries(markers)) {
+                if (!markerStates[id]) {
+                    map.addLayer(marker);
+                    markerStates[id] = true;
+                    const btn = document.getElementById(`map-btn-${id}`);
+                    if (btn) {
+                        btn.classList.add('active');
+                        btn.innerHTML = `
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                            Hide from Map
+                        `;
+                    }
+                }
+            }
+            // Fit map to show all markers
+            if (Object.keys(markers).length > 0) {
+                const group = new L.featureGroup(Object.values(markers));
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+
+        function clearAllMarkers() {
+            for (const [id, marker] of Object.entries(markers)) {
+                if (markerStates[id]) {
+                    map.removeLayer(marker);
+                    markerStates[id] = false;
+                    const btn = document.getElementById(`map-btn-${id}`);
+                    if (btn) {
+                        btn.classList.remove('active');
+                        btn.innerHTML = `
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                            Show on Map
+                        `;
+                    }
+                }
+            }
+            map.setView([40.730610, -73.935242], 2);
+        }
+    </script>
+</body>
+</html>
+
